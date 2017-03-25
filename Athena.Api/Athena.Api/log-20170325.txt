@@ -1,0 +1,12 @@
+2017-03-25 19:37:12.841 +00:00 [Information] Request starting HTTP/1.1 GET http://localhost:32771/api/values  
+2017-03-25 19:37:13.171 +00:00 [Information] Request finished in 340.6474ms 404 
+2017-03-25 19:37:13.350 +00:00 [Information] Request starting HTTP/1.1 GET http://localhost:32771/api/values  
+2017-03-25 19:37:13.351 +00:00 [Information] Request finished in 0.6326ms 404 
+2017-03-25 19:41:16.605 +00:00 [Information] Request starting HTTP/1.1 GET http://localhost:32772/api/values  
+2017-03-25 19:41:16.877 +00:00 [Information] Request finished in 280.0049ms 404 
+2017-03-25 19:41:17.037 +00:00 [Information] Request starting HTTP/1.1 GET http://localhost:32772/api/values  
+2017-03-25 19:41:17.043 +00:00 [Information] Request finished in 6.5456ms 404 
+2017-03-25 20:00:48.022 +00:00 [Information] Request starting HTTP/1.1 GET http://localhost:32772/api/values  
+2017-03-25 20:00:48.412 +00:00 [Information] Request finished in 398.9884ms 404 
+2017-03-25 20:00:48.597 +00:00 [Information] Request starting HTTP/1.1 GET http://localhost:32772/api/values  
+2017-03-25 20:00:48.614 +00:00 [Information] Request finished in 12.9339ms 404 

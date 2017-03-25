@@ -1,0 +1,15 @@
+version: '2'
+
+services:
+  athena.api:
+    image: athena.api
+    build:
+      context: ./Athena.Api
+      dockerfile: Dockerfile
+    environment:
+      - HOST=$(hostname)
+
+networks:
+  default:
+    external:
+      name: recipes
