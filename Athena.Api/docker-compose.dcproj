@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" Sdk="Microsoft.Docker.Sdk">
   <PropertyGroup Label="Globals">
-    <ProjectGuid>89d6eea4-d456-40e1-8e87-00a459cc0181</ProjectGuid>
+    <ProjectGuid>2fb3b856-cb68-4abb-8e7a-9a7d049757f8</ProjectGuid>
     <DockerLaunchBrowser>True</DockerLaunchBrowser>
-    <DockerServiceUrl>http://localhost:{ServicePort}/api/values</DockerServiceUrl>
+    <DockerServiceUrl>http://localhost:{ServicePort}/health-check</DockerServiceUrl>
     <DockerServiceName>athena.api</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>

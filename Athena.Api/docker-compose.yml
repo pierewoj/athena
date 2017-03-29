@@ -6,9 +6,6 @@ services:
     build:
       context: ./Athena.Api
       dockerfile: Dockerfile
-    environment:
-      - HOST=$(hostname)
-
 networks:
   default:
     external:
