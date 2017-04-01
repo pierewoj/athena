@@ -13,7 +13,6 @@ namespace Athena.Api.Infrastructure.Services
     public interface ICrawlablePageService
     {
         Option<string> GetPage();
-        void Save(string uri);
         void Save(IEnumerable<string> pages);
     }
 
@@ -49,7 +48,7 @@ namespace Athena.Api.Infrastructure.Services
 
         public void Save(string page)
         {
-            var pageSavedBefore = _savedPages.Contains(page);
+            bool pageSavedBefore = _savedPages.Contains(page);
             var shouldCrawlPage = _shouldCrawlDecider.ShouldCrawl(page);
 
             if (!pageSavedBefore && shouldCrawlPage)
