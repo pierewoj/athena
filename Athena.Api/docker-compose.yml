@@ -6,7 +6,12 @@ services:
     build:
       context: ./Athena.Api
       dockerfile: Dockerfile
+    depends_on:
+      - consul
+  consul:
+    image: consul
+    command: "join consul-server"
 networks:
   default:
     external:
-      name: recipes
+      name: def_net

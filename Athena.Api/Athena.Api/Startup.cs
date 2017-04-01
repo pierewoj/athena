@@ -5,9 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Athena.Api.Configuration;
-using Athena.Api.Discovery;
 using Athena.Api.Infrastructure.Services;
-using Consul;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -44,22 +42,12 @@ namespace Athena.Api
             services.AddSingleton<ICrawlablePageService, CrawlablePageService>();
             services.AddSingleton<IShouldCrawlDecider, ShouldCrawlDecider>();
             services.AddMvc();
-            services.AddDiscoveryRegistrer();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IDiscoveryRegisterer registrer)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddSerilog();
             app.UseMvc();
-            var consulUri = new Uri("http://consul-server:8500");
-            registrer.Register(consulUri, cfg =>
-            {
-                cfg.Address = EnvironmentVariables.Hostname;
-                cfg.Port = 80;
-                cfg.ServiceName = "Athena-Api";
-                cfg.HttpCheck = $"http://{cfg.Address}/health-check";
-
-            });
         }
     }
 }
