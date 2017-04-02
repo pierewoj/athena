@@ -65,10 +65,12 @@ namespace Athena.Api.Infrastructure.Services
 
         public void Save(IEnumerable<string> pages)
         {
+            _logger.LogInformation("Saving pages for future crawling.");
             foreach (var crawlablePage in pages)
             {
                 Save(crawlablePage);
             }
+            _logger.LogInformation($"SavedPages.Count={_savedPages.Count}, CrawlablePagesQueue.Count={_crawlablePagesQueue.Count}");
         }
     }
 }

@@ -11,12 +11,12 @@ using Microsoft.Extensions.Logging;
 namespace Athena.Api.Controllers
 {
     [Route("/pages/crawlable")]
-    public class ValuesController : Controller
+    public class CrawlablePagesController : Controller
     {
-        private readonly ILogger<ValuesController> _logger;
+        private readonly ILogger<CrawlablePagesController> _logger;
         private readonly ICrawlablePageService _crawlablePageService;
 
-        public ValuesController(ILogger<ValuesController> logger, ICrawlablePageService crawlablePageService)
+        public CrawlablePagesController(ILogger<CrawlablePagesController> logger, ICrawlablePageService crawlablePageService)
         {
             _crawlablePageService = crawlablePageService;
             _logger = logger;
@@ -25,7 +25,18 @@ namespace Athena.Api.Controllers
         public IActionResult GetPage()
         {
             var pageOption = _crawlablePageService.GetPage();
-            var result = pageOption.Match<IActionResult>(uri => Ok(new CrawlablePage(){Uri = uri}), NoContent);
+            var result = pageOption.Match<IActionResult>(
+                    uri =>
+                    {
+                        _logger.LogInformation($"GetPage returns OK with pageUri {uri}");
+                        return Ok(new CrawlablePage() {Uri = uri});
+                    },() =>
+                    {
+                        _logger.LogInformation($"GetPage returns NoContent.");
+                        return NoContent();
+                    }
+                );
+            
             return result;
         }
 
