@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Athena.Api.Configuration;
 using Athena.Api.Infrastructure.Services;
+using Microsoft.AspNetCore.Razor.CodeGenerators;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
@@ -30,8 +31,9 @@ namespace Athena.Api.Infrastructure
         public IDatabase GetDatabase()
         {
             IPHostEntry ips = Dns.GetHostEntryAsync(_configuration.RedisHostname).Result;
-            var ip = ips.AddressList.First();
-            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(ip.ToString());
+            var ip = ips.AddressList.First().ToString();
+            _logger.LogInformation($"Redis server address was resolved to {ip}");
+            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(ip);
             return redis.GetDatabase();
         }
     }

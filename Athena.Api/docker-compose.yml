@@ -1,7 +1,7 @@
 version: '2'
 
 services:
-  athena.api:
+  athena:
     image: athena.api
     build:
       context: ./Athena.Api

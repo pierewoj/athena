@@ -1,7 +1,7 @@
 version: '2'
 
 services:
-  athena.api:
+  athena:
     build:
       args:
         source: ${DOCKER_BUILD_SOURCE}

@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Athena.Api.Controllers
 {
-    [Route("/pages/crawlable")]
     public class CrawlablePagesController : Controller
     {
         private readonly ILogger<CrawlablePagesController> _logger;
@@ -21,7 +20,9 @@ namespace Athena.Api.Controllers
             _crawlablePageService = crawlablePageService;
             _logger = logger;
         }
+
         [HttpGet]
+        [Route("/pages/crawlable/random")]
         public IActionResult GetPage()
         {
             var pageOption = _crawlablePageService.GetPage();
@@ -41,6 +42,7 @@ namespace Athena.Api.Controllers
         }
 
         [HttpPut]
+        [Route("/pages/crawlable")]
         public IActionResult PutPages([FromBody] CrawlablePageCollection pages)
         {
             if (pages == null)
@@ -49,6 +51,18 @@ namespace Athena.Api.Controllers
                 return BadRequest("Invalid format");
             var uris = pages.CrawlablePages.Select(x => x.Uri.ToString());
             _crawlablePageService.Save(uris);
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Route("/pages/crawlable")]
+        public IActionResult DeletePage([FromBody] CrawlablePage page)
+        {
+            if (page == null)
+                return BadRequest("Valid json body with page info has to be provided with request.");
+            if (page.Uri == null)
+                return BadRequest("Invalid format");
+            _crawlablePageService.RemoveFromCrawlQueue(page.Uri);
             return Ok();
         }
     }

@@ -7,6 +7,7 @@ using Athena.Api.Model;
 using Microsoft.Extensions.Logging;
 using LanguageExt;
 using Microsoft.Extensions.Options;
+using StackExchange.Redis;
 
 namespace Athena.Api.Infrastructure.Services
 {
@@ -14,63 +15,57 @@ namespace Athena.Api.Infrastructure.Services
     {
         Option<string> GetPage();
         void Save(IEnumerable<string> pages);
+        void RemoveFromCrawlQueue(string page);
     }
 
     class CrawlablePageService : ICrawlablePageService
     {
-        private readonly Queue<string> _crawlablePagesQueue = new Queue<string>();
-        private readonly HashSet<string> _savedPages = new HashSet<string>();
         private readonly IShouldCrawlDecider _shouldCrawlDecider;
         private readonly ILogger<CrawlablePageService> _logger;
         private readonly AthenaConfiguration _athenaConfiguration;
+        private readonly IRedisProvider _redisProvider;
 
-        public CrawlablePageService(IShouldCrawlDecider shouldCrawlDecider, ILogger<CrawlablePageService> logger, IOptions<AthenaConfiguration> configuration)
+        public CrawlablePageService(IShouldCrawlDecider shouldCrawlDecider, ILogger<CrawlablePageService> logger, IOptions<AthenaConfiguration> configuration,
+            IRedisProvider redisProvider)
         {
+            _redisProvider = redisProvider;
             _logger = logger;
             _shouldCrawlDecider = shouldCrawlDecider;
             _athenaConfiguration = configuration.Value;
-
-            var startPage = _athenaConfiguration.BaseUri;
-            _crawlablePagesQueue.Enqueue(startPage);
         }
 
         public Option<string> GetPage()
         {
-            if (!_crawlablePagesQueue.Any())
+            var page = _redisProvider.GetDatabase().SetRandomMember("to_crawl");
+            if (!page.HasValue)
             {
                 _logger.LogInformation("No more pages to crawl. Returning None.");
                 return Option<string>.None;
             }
-
-            var page = _crawlablePagesQueue.Dequeue();
-            return page;
+            
+            return page.ToString();
         }
-
-        public void Save(string page)
-        {
-            bool pageSavedBefore = _savedPages.Contains(page);
-            var shouldCrawlPage = _shouldCrawlDecider.ShouldCrawl(page);
-
-            if (!pageSavedBefore && shouldCrawlPage)
-            {
-                _logger.LogDebug($"Saving page [{page}] and adding it to the queue. SavedCount={_savedPages.Count}");
-                _savedPages.Add(page);
-                _crawlablePagesQueue.Enqueue(page);
-            }
-            else
-            {
-                _logger.LogDebug($"Ignoring saving page [{page}] and adding it to the queue. PageSavedBefore={pageSavedBefore}, ShouldCrawl={shouldCrawlPage}");
-            }
-        }
+        
 
         public void Save(IEnumerable<string> pages)
         {
             _logger.LogInformation("Saving pages for future crawling.");
-            foreach (var crawlablePage in pages)
-            {
-                Save(crawlablePage);
-            }
-            _logger.LogInformation($"SavedPages.Count={_savedPages.Count}, CrawlablePagesQueue.Count={_crawlablePagesQueue.Count}");
+            var toAdd = pages.Where(_shouldCrawlDecider.ShouldCrawl).Select(s => (RedisValue) s).ToArray();
+            var db = _redisProvider.GetDatabase();
+            var toAddKey = Guid.NewGuid().ToString();
+            var tmpKey = Guid.NewGuid().ToString();
+            db.SetAdd(toAddKey, toAdd);
+            db.SetCombineAndStore(SetOperation.Difference, tmpKey, toAddKey, "crawled");
+            db.SetCombineAndStore(SetOperation.Union, "to_crawl", "to_crawl", tmpKey);
+            db.KeyDelete(tmpKey);
+            db.KeyDelete(toAddKey);
+        }
+
+        public void RemoveFromCrawlQueue(string page)
+        {
+            _logger.LogInformation($"Removing [{page}] from crawl queue");
+            _redisProvider.GetDatabase().SetRemove("to_crawl", page);
+            _redisProvider.GetDatabase().SetAdd("crawled", page);
         }
     }
 }
