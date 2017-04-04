@@ -22,16 +22,14 @@ namespace Athena.Api.Infrastructure.Services
     {
         private readonly IShouldCrawlDecider _shouldCrawlDecider;
         private readonly ILogger<CrawlablePageService> _logger;
-        private readonly AthenaConfiguration _athenaConfiguration;
         private readonly IRedisProvider _redisProvider;
 
-        public CrawlablePageService(IShouldCrawlDecider shouldCrawlDecider, ILogger<CrawlablePageService> logger, IOptions<AthenaConfiguration> configuration,
+        public CrawlablePageService(IShouldCrawlDecider shouldCrawlDecider, ILogger<CrawlablePageService> logger, 
             IRedisProvider redisProvider)
         {
             _redisProvider = redisProvider;
             _logger = logger;
             _shouldCrawlDecider = shouldCrawlDecider;
-            _athenaConfiguration = configuration.Value;
         }
 
         public Option<string> GetPage()
@@ -50,11 +48,12 @@ namespace Athena.Api.Infrastructure.Services
         public void Save(IEnumerable<string> pages)
         {
             _logger.LogInformation("Saving pages for future crawling.");
-            var toAdd = pages.Where(_shouldCrawlDecider.ShouldCrawl).Select(s => (RedisValue) s).ToArray();
+            var toAdd = pages.Where(_shouldCrawlDecider.ShouldCrawl);
+            var toAddRedis = toAdd.Select(s => (RedisValue) s).ToArray();
             var db = _redisProvider.GetDatabase();
             var toAddKey = Guid.NewGuid().ToString();
             var tmpKey = Guid.NewGuid().ToString();
-            db.SetAdd(toAddKey, toAdd);
+            db.SetAdd(toAddKey, toAddRedis);
             db.SetCombineAndStore(SetOperation.Difference, tmpKey, toAddKey, "crawled");
             db.SetCombineAndStore(SetOperation.Union, "to_crawl", "to_crawl", tmpKey);
             db.KeyDelete(tmpKey);
@@ -64,8 +63,8 @@ namespace Athena.Api.Infrastructure.Services
         public void RemoveFromCrawlQueue(string page)
         {
             _logger.LogInformation($"Removing [{page}] from crawl queue");
-            _redisProvider.GetDatabase().SetRemove("to_crawl", page);
-            _redisProvider.GetDatabase().SetAdd("crawled", page);
+            var r1 = _redisProvider.GetDatabase().SetRemove("to_crawl", page);
+            var r2 = _redisProvider.GetDatabase().SetAdd("crawled", page);
         }
     }
 }
