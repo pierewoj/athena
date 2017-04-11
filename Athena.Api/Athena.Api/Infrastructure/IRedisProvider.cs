@@ -8,33 +8,31 @@ using Athena.Api.Infrastructure.Services;
 using Microsoft.AspNetCore.Razor.CodeGenerators;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ServiceStack.Redis;
 using StackExchange.Redis;
 
 namespace Athena.Api.Infrastructure
 {
     public interface IRedisProvider
     {
-        IDatabase GetDatabase();
+        IRedisClientsManager GetDatabase();
     }
 
     class RedisProvider : IRedisProvider
     {
         private readonly ILogger<RedisProvider> _logger;
         private readonly AthenaConfiguration _configuration;
-
+        private readonly IRedisClientsManager _clientsManager;
         public RedisProvider(ILogger<RedisProvider> logger, IOptions<AthenaConfiguration> configuration)
         {
             _configuration = configuration.Value;
             _logger = logger;
+            _clientsManager = new BasicRedisClientManager(_configuration.RedisHostname);
         }
 
-        public IDatabase GetDatabase()
+        public IRedisClientsManager GetDatabase()
         {
-            IPHostEntry ips = Dns.GetHostEntryAsync(_configuration.RedisHostname).Result;
-            var ip = ips.AddressList.First().ToString();
-            _logger.LogInformation($"Redis server address was resolved to {ip}");
-            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(ip);
-            return redis.GetDatabase();
+            return _clientsManager;
         }
     }
 }

@@ -34,37 +34,42 @@ namespace Athena.Api.Infrastructure.Services
 
         public Option<string> GetPage()
         {
-            var page = _redisProvider.GetDatabase().SetRandomMember("to_crawl");
-            if (!page.HasValue)
+            using (var client = _redisProvider.GetDatabase().GetReadOnlyClient())
             {
-                _logger.LogInformation("No more pages to crawl. Returning None.");
-                return Option<string>.None;
+                var page = client.GetRandomItemFromSet("to_crawl");
+                if (page == null)
+                {
+                    _logger.LogInformation("No more pages to crawl. Returning None.");
+                    return Option<string>.None;
+                }
+                return page;
             }
-            
-            return page.ToString();
         }
         
 
         public void Save(IEnumerable<string> pages)
         {
-            _logger.LogInformation("Saving pages for future crawling.");
-            var toAdd = pages.Where(_shouldCrawlDecider.ShouldCrawl);
-            var toAddRedis = toAdd.Select(s => (RedisValue) s).ToArray();
-            var db = _redisProvider.GetDatabase();
+            var toAdd = pages.Where(_shouldCrawlDecider.ShouldCrawl).ToList();
             var toAddKey = Guid.NewGuid().ToString();
             var tmpKey = Guid.NewGuid().ToString();
-            db.SetAdd(toAddKey, toAddRedis);
-            db.SetCombineAndStore(SetOperation.Difference, tmpKey, toAddKey, "crawled");
-            db.SetCombineAndStore(SetOperation.Union, "to_crawl", "to_crawl", tmpKey);
-            db.KeyDelete(tmpKey);
-            db.KeyDelete(toAddKey);
+            using (var client = _redisProvider.GetDatabase().GetClient())
+            {
+                _logger.LogInformation("Saving pages for future crawling.");
+                client.AddRangeToSet(toAddKey, toAdd);
+                client.StoreDifferencesFromSet(tmpKey, toAddKey, "crawled");
+                client.StoreUnionFromSets("to_crawl","to_crawl", tmpKey);
+                client.RemoveEntry(tmpKey, toAddKey);
+            }
         }
 
         public void RemoveFromCrawlQueue(string page)
         {
             _logger.LogInformation($"Removing [{page}] from crawl queue");
-            var r1 = _redisProvider.GetDatabase().SetRemove("to_crawl", page);
-            var r2 = _redisProvider.GetDatabase().SetAdd("crawled", page);
+            using (var client = _redisProvider.GetDatabase().GetClient())
+            {
+                client.RemoveItemFromSet("to_crawl", page);
+                client.AddItemToSet("crawled",page);
+            }
         }
     }
 }
